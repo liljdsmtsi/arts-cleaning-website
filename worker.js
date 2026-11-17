@@ -27,6 +27,16 @@ export default {
       } else {
         console.warn('Quote saved; SMS notification settings are incomplete');
       }
+      if (env.RESEND_API_KEY) {
+        const emailNotice = sendQuoteEmail(env, {
+          name, phone, email, service, city:str(data.city,80),
+          date:str(data.date,10), details:str(data.details,2000),
+          beds, baths
+        });
+        ctx.waitUntil(emailNotice.catch(error => console.error('Quote email notification failed:', String(error))));
+      } else {
+        console.warn('Quote saved; Resend API key is not configured');
+      }
       return Response.json({ok:true,message:'Request received. We will contact you to discuss an estimate.'}, {status:201,headers:{'Cache-Control':'no-store'}});
     } catch(e) { console.error('Quote submission failed',e); return Response.json({error:'Unable to save request. Please call or text instead.'}, {status:500}); }
   }
@@ -41,7 +51,7 @@ async function sendQuoteSms(env, quote) {
     quote.city ? `Location: ${quote.city}` : '',
     quote.date ? `Preferred date: ${quote.date}` : '',
     quote.email ? `Email: ${quote.email}` : ''
-  ].filter(Boolean).join('\n');
+  ].filter(Boolean).join('\\n');
   const params = new URLSearchParams({
     To: env.TWILIO_TO_NUMBER,
     From: env.TWILIO_FROM_NUMBER,
@@ -63,4 +73,36 @@ async function sendQuoteSms(env, quote) {
     throw new Error(`Twilio API returned HTTP ${response.status}`);
   }
   console.log('Quote SMS accepted by Twilio');
+}
+
+
+async function sendQuoteEmail(env, quote) {
+  const recipient = 'artscleaningservicesllc@outlook.com';
+  const lines = [
+    'New A.R.T.S. Cleaning estimate request',
+    `Name: ${quote.name}`,
+    `Phone: ${quote.phone}`,
+    `Email: ${quote.email || 'Not provided'}`,
+    `Service: ${quote.service}`,
+    `City / ZIP: ${quote.city || 'Not provided'}`,
+    `Preferred date: ${quote.date || 'Not provided'}`,
+    `Bedrooms: ${quote.beds ?? 'Not provided'}`,
+    `Bathrooms: ${quote.baths ?? 'Not provided'}`,
+    `Notes: ${quote.details || 'None'}`
+  ];
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: 'A.R.T.S. Cleaning <notifications@artscleaningco.com>',
+      to: [recipient],
+      subject: 'New cleaning estimate request',
+      text: lines.join('\\n')
+    })
+  });
+  if (!response.ok) throw new Error(`Resend API returned HTTP ${response.status}`);
+  console.log('Quote email accepted by Resend');
 }
