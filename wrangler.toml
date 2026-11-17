@@ -1,4 +1,4 @@
-name = "arts-cleaning-site"
+name = "arts-cleaning-website"
 main = "worker.js"
 compatibility_date = "2026-11-15"
 
@@ -6,9 +6,7 @@ compatibility_date = "2026-11-15"
 directory = "./public"
 binding = "ASSETS"
 
-# Replace DATABASE_ID after obtaining it from Cloudflare D1 overview.
-# Uncomment these lines before deployment.
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "artscleaningdb"
-# database_id = "PASTE_YOUR_D1_DATABASE_ID_HERE"
+[[d1_databases]]
+binding = "DB"
+database_name = "artscleaningdb"
+database_id = "478fffd1-db6a-494d-8f1d-f21c285ea9ed"
