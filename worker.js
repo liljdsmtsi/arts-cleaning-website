@@ -20,89 +20,66 @@ export default {
     if ((beds!==null&&(!Number.isInteger(beds)||beds<0||beds>50))||(baths!==null&&(!Number.isFinite(baths)||baths<0||baths>50)))return Response.json({error:'Invalid property size'}, {status:400});
     try {
       await env.DB.prepare(`INSERT INTO cleaning_requests (customer_name,phone,email,service_type,property_address,bedrooms,bathrooms,preferred_date,customer_notes) VALUES (?,?,?,?,?,?,?,?,?)`).bind(name,phone,email,service,str(data.city,80),beds,baths,str(data.date,10),str(data.details,2000)).run();
-      // Send the notification after saving. A messaging failure must not lose the quote.
+      // Notification failures must never undo a successfully saved request.
       if (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM_NUMBER && env.TWILIO_TO_NUMBER) {
-        const notify = sendQuoteSms(env, {name, phone, email, service, city:str(data.city,80), date:str(data.date,10)});
-        ctx.waitUntil(notify.catch(error => console.error('Quote SMS notification failed:', String(error))));
+        const notify = async () => {
+          const body = [
+            'A.R.T.S. Cleaning: New estimate request',
+            `Name: ${name}`,
+            `Phone: ${phone}`,
+            `Service: ${service}`,
+            email ? `Email: ${email}` : '',
+            str(data.city,80) ? `Location: ${str(data.city,80)}` : '',
+            str(data.date,10) ? `Preferred date: ${str(data.date,10)}` : ''
+          ].filter(Boolean).join('\n');
+          const endpoint = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(env.TWILIO_ACCOUNT_SID)}/Messages.json`;
+          const params = new URLSearchParams({ To: env.TWILIO_TO_NUMBER, From: env.TWILIO_FROM_NUMBER, Body: body });
+          try {
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                Authorization: 'Basic ' + btoa(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`),
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: params.toString()
+            });
+            if (!response.ok) console.error('Twilio SMS failed, HTTP', response.status);
+          } catch (error) {
+            console.error('Twilio SMS network error', String(error));
+          }
+        };
+        if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(notify());
+        else await notify();
       } else {
-        console.warn('Quote saved; SMS notification settings are incomplete');
+        console.warn('SMS notification skipped: Twilio configuration incomplete');
       }
       if (env.RESEND_API_KEY) {
-        const emailNotice = sendQuoteEmail(env, {
-          name, phone, email, service, city:str(data.city,80),
-          date:str(data.date,10), details:str(data.details,2000),
-          beds, baths
-        });
-        ctx.waitUntil(emailNotice.catch(error => console.error('Quote email notification failed:', String(error))));
-      } else {
-        console.warn('Quote saved; Resend API key is not configured');
+        const sendEmail = async () => {
+          const lines = [
+            'New A.R.T.S. Cleaning estimate request',
+            `Name: ${name}`, `Phone: ${phone}`, `Email: ${email || 'Not provided'}`,
+            `Service: ${service}`, `City / ZIP: ${str(data.city,80) || 'Not provided'}`,
+            `Preferred date: ${str(data.date,10) || 'Not provided'}`,
+            `Bedrooms: ${beds ?? 'Not provided'}`, `Bathrooms: ${baths ?? 'Not provided'}`,
+            `Notes: ${str(data.details,2000) || 'None'}`
+          ];
+          try {
+            const response = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type':'application/json'},
+              body: JSON.stringify({
+                from: 'A.R.T.S. Cleaning <notifications@artscleaningco.com>',
+                to: ['artscleaningservicesllc@outlook.com'],
+                subject: 'New cleaning estimate request', text: lines.join('\n')
+              })
+            });
+            if (!response.ok) console.error('Resend email failed, HTTP', response.status);
+          } catch (error) { console.error('Resend email network error', String(error)); }
+        };
+        if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(sendEmail());
+        else await sendEmail();
       }
       return Response.json({ok:true,message:'Request received. We will contact you to discuss an estimate.'}, {status:201,headers:{'Cache-Control':'no-store'}});
     } catch(e) { console.error('Quote submission failed',e); return Response.json({error:'Unable to save request. Please call or text instead.'}, {status:500}); }
   }
 };
-
-async function sendQuoteSms(env, quote) {
-  const body = [
-    'A.R.T.S. Cleaning: New estimate request',
-    `Name: ${quote.name}`,
-    `Phone: ${quote.phone}`,
-    `Service: ${quote.service}`,
-    quote.city ? `Location: ${quote.city}` : '',
-    quote.date ? `Preferred date: ${quote.date}` : '',
-    quote.email ? `Email: ${quote.email}` : ''
-  ].filter(Boolean).join('\\n');
-  const params = new URLSearchParams({
-    To: env.TWILIO_TO_NUMBER,
-    From: env.TWILIO_FROM_NUMBER,
-    Body: body
-  });
-  const response = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(env.TWILIO_ACCOUNT_SID)}/Messages.json`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + btoa(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`),
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
-    }
-  );
-  if (!response.ok) {
-    // Avoid logging request contents or credentials.
-    throw new Error(`Twilio API returned HTTP ${response.status}`);
-  }
-  console.log('Quote SMS accepted by Twilio');
-}
-
-
-async function sendQuoteEmail(env, quote) {
-  const recipient = 'artscleaningservicesllc@outlook.com';
-  const lines = [
-    'New A.R.T.S. Cleaning estimate request',
-    `Name: ${quote.name}`,
-    `Phone: ${quote.phone}`,
-    `Email: ${quote.email || 'Not provided'}`,
-    `Service: ${quote.service}`,
-    `City / ZIP: ${quote.city || 'Not provided'}`,
-    `Preferred date: ${quote.date || 'Not provided'}`,
-    `Bedrooms: ${quote.beds ?? 'Not provided'}`,
-    `Bathrooms: ${quote.baths ?? 'Not provided'}`,
-    `Notes: ${quote.details || 'None'}`
-  ];
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: 'A.R.T.S. Cleaning <notifications@artscleaningco.com>',
-      to: [recipient],
-      subject: 'New cleaning estimate request',
-      text: lines.join('\\n')
-    })
-  });
-  if (!response.ok) throw new Error(`Resend API returned HTTP ${response.status}`);
-  console.log('Quote email accepted by Resend');
-}
