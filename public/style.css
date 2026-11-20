@@ -38,3 +38,10 @@ input:focus, select:focus, textarea:focus { outline-color: var(--arts-gold); }
 .credentials-strip{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 4px}.credentials-strip span{display:inline-flex;align-items:center;border:1px solid #d8d1bf;border-radius:999px;padding:9px 15px;font-weight:700;background:#fff;color:#233c38}.credentials-strip span::before{content:'✓';margin-right:9px;color:#2e6859}.review-placeholder{border:1px solid #dedbd1;border-radius:18px;padding:28px;background:#f7f6f2;max-width:760px;margin:20px auto 0;text-align:center}.review-placeholder p{margin-bottom:0}.reviews-section{text-align:center;padding:60px 0}.reviews-section .container{max-width:1000px}
 
 .site-credit{margin-top:8px;font-size:.78rem;opacity:.8}.site-credit a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+
+/* Keep the floating text CTA clear of the footer credit on phones. */
+@media (max-width: 700px) {
+  .footer { padding-bottom: 105px; }
+  .site-credit { padding-right: 0; max-width: 100%; }
+  .float-contact { bottom: max(14px, env(safe-area-inset-bottom)); right: 14px; }
+}
