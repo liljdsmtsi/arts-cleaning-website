@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS customer_reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, display_name TEXT NOT NULL, rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5), review_text TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')), created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS idx_customer_reviews_status_date ON customer_reviews(status,created_at DESC);
