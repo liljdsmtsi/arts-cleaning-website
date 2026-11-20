@@ -130,7 +130,7 @@ async function handleReviews(request,env,ctx,url){
    const decoded=[];
    for(const p of photos){
     if(typeof p!=="string"||p.length>2800000)return json({error:"Photo too large (maximum 2 MB each)"},413);
-    const m=/^data:(image\[/](?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(p);
+    const m=/^data:(image[/](?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(p);
     if(!m)return json({error:"Use JPEG, PNG or WebP images"},400);
     const raw=atob(m[2]);if(raw.length>2*1024*1024)return json({error:"Photo too large (maximum 2 MB each)"},413);
     const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
