@@ -98,7 +98,7 @@ async function handleReviews(request,env,ctx,url){
   if(url.pathname.startsWith("/api/reviews/public-photo/") && request.method==="GET"){
    if(!env.REVIEW_PHOTOS)return json({error:"Photo storage unavailable"},503);
    const key=decodeURIComponent(url.pathname.slice("/api/reviews/public-photo/".length));
-   if(!/^reviews\[/][0-9]+\[/][a-f0-9-]+\\.(jpg|png|webp)$/.test(key))return json({error:"Invalid photo"},400);
+   if(!key.startsWith("reviews/") || !/^reviews[/][0-9]+[/][a-f0-9-]+[.](jpg|png|webp)$/.test(key))return json({error:"Invalid photo"},400);
    const row=await env.DB.prepare("SELECT r.status FROM customer_review_photos p JOIN customer_reviews r ON r.id=p.review_id WHERE p.object_key=?").bind(key).first();
    if(!row||row.status!=="approved")return json({error:"Not found"},404);
    const obj=await env.REVIEW_PHOTOS.get(key);if(!obj)return json({error:"Not found"},404);
@@ -107,7 +107,7 @@ async function handleReviews(request,env,ctx,url){
   if(url.pathname.startsWith("/api/reviews/photo/") && request.method==="GET"){
    if(!env.REVIEW_PHOTOS)return json({error:"Photo storage unavailable"},503);
    const key=url.pathname.slice("/api/reviews/photo/".length);
-   if(!/^reviews\[/][0-9]+\[/][a-f0-9-]+\\.(jpg|png|webp)$/.test(key))return json({error:"Invalid photo"},400);
+   if(!key.startsWith("reviews/") || !/^reviews[/][0-9]+[/][a-f0-9-]+[.](jpg|png|webp)$/.test(key))return json({error:"Invalid photo"},400);
    const object=await env.REVIEW_PHOTOS.get(key);
    if(!object)return json({error:"Not found"},404);
    return new Response(object.body,{headers:{"Content-Type":object.httpMetadata?.contentType||"image/jpeg","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
