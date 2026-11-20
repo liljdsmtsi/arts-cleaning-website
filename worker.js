@@ -120,7 +120,7 @@ async function handleReviews(request,env,ctx,url){
   }
   if(url.pathname==="/api/reviews"&&request.method==="POST"){
    if(!request.headers.get("content-type")?.startsWith("application/json"))return json({error:"JSON required"},415);
-   if(Number(request.headers.get("content-length")||0)>8000)return json({error:"Too large"},413);
+   if(Number(request.headers.get("content-length")||0)>12000000)return json({error:"Review upload exceeds 12 MB total"},413);
    const d=await request.json();if(d.website)return json({ok:true},201);
    const name=typeof d.name==="string"?d.name.trim():"",message=typeof d.review==="string"?d.review.trim():"",rating=Number(d.rating);
    if(name.length<2||name.length>80||message.length<15||message.length>1500||!Number.isInteger(rating)||rating<1||rating>5||d.permission!==true)return json({error:"Complete all fields and consent to publication"},400);
