@@ -98,7 +98,7 @@ async function handleReviews(request,env,ctx,url){
   if(url.pathname.startsWith("/api/reviews/public-photo/") && request.method==="GET"){
    if(!env.REVIEW_PHOTOS)return json({error:"Photo storage unavailable"},503);
    const key=decodeURIComponent(url.pathname.slice("/api/reviews/public-photo/".length));
-   if(!/^reviews\\/[0-9]+\\/[a-f0-9-]+\\.(jpg|png|webp)$/.test(key))return json({error:"Invalid photo"},400);
+   if(!/^reviews\[/][0-9]+\[/][a-f0-9-]+\\.(jpg|png|webp)$/.test(key))return json({error:"Invalid photo"},400);
    const row=await env.DB.prepare("SELECT r.status FROM customer_review_photos p JOIN customer_reviews r ON r.id=p.review_id WHERE p.object_key=?").bind(key).first();
    if(!row||row.status!=="approved")return json({error:"Not found"},404);
    const obj=await env.REVIEW_PHOTOS.get(key);if(!obj)return json({error:"Not found"},404);
@@ -107,7 +107,7 @@ async function handleReviews(request,env,ctx,url){
   if(url.pathname.startsWith("/api/reviews/photo/") && request.method==="GET"){
    if(!env.REVIEW_PHOTOS)return json({error:"Photo storage unavailable"},503);
    const key=url.pathname.slice("/api/reviews/photo/".length);
-   if(!/^reviews\\/[0-9]+\\/[a-f0-9-]+\\.(jpg|png|webp)$/.test(key))return json({error:"Invalid photo"},400);
+   if(!/^reviews\[/][0-9]+\[/][a-f0-9-]+\\.(jpg|png|webp)$/.test(key))return json({error:"Invalid photo"},400);
    const object=await env.REVIEW_PHOTOS.get(key);
    if(!object)return json({error:"Not found"},404);
    return new Response(object.body,{headers:{"Content-Type":object.httpMetadata?.contentType||"image/jpeg","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
@@ -130,7 +130,7 @@ async function handleReviews(request,env,ctx,url){
    const decoded=[];
    for(const p of photos){
     if(typeof p!=="string"||p.length>2800000)return json({error:"Photo too large (maximum 2 MB each)"},413);
-    const m=/^data:(image\\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(p);
+    const m=/^data:(image\[/](?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(p);
     if(!m)return json({error:"Use JPEG, PNG or WebP images"},400);
     const raw=atob(m[2]);if(raw.length>2*1024*1024)return json({error:"Photo too large (maximum 2 MB each)"},413);
     const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
