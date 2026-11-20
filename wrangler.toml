@@ -10,3 +10,7 @@ binding = "ASSETS"
 binding = "DB"
 database_name = "artscleaningdb"
 database_id = "478fffd1-db6a-494d-8f1d-f21c285ea9ed"
+
+[[r2_buckets]]
+binding = "REVIEW_PHOTOS"
+bucket_name = "arts-review-pho"
