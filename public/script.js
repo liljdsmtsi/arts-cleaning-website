@@ -1,5 +1,6 @@
-document.getElementById('year').textContent=new Date().getFullYear();const menu=document.getElementById('menu');if(menu)menu.addEventListener('click',()=>{
+const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear();const menu=document.getElementById('menu');if(menu)menu.addEventListener('click',()=>{
   const nav=document.getElementById('navlinks');
+  if(!nav)return;
   const opened=nav.classList.toggle('open');
   menu.setAttribute('aria-expanded',String(opened));
 });const form=document.getElementById('quoteForm');
