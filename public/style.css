@@ -50,3 +50,11 @@ input:focus, select:focus, textarea:focus { outline-color: var(--arts-gold); }
 .floating-contact-actions{position:fixed;right:22px;bottom:22px;z-index:35;display:flex;gap:10px;align-items:center}
 .floating-contact-actions .btn{box-shadow:0 10px 35px #0002;white-space:nowrap;min-height:48px}
 @media(max-width:700px){.floating-contact-actions{right:14px;bottom:max(14px,env(safe-area-inset-bottom));gap:8px}.floating-contact-actions .btn{padding:12px 15px;font-size:13px}.footer{padding-bottom:110px}}
+
+/* Single floating contact button with call/text choices */
+.floating-contact-actions{flex-direction:column;align-items:flex-end}
+.contact-choices{background:#fff;border:1px solid #d8e5df;border-radius:12px;padding:6px;box-shadow:0 12px 35px #0003;min-width:175px}
+.contact-choices[hidden]{display:none!important}
+.contact-choices a{display:block;padding:12px 14px;text-decoration:none;color:#073a3f;font-size:15px;font-weight:700;border-radius:8px}
+.contact-choices a:hover,.contact-choices a:focus{background:#e7f4ee}
+.contact-toggle{min-height:48px}
