@@ -45,3 +45,8 @@ input:focus, select:focus, textarea:focus { outline-color: var(--arts-gold); }
   .site-credit { padding-right: 0; max-width: 100%; }
   .float-contact { bottom: max(14px, env(safe-area-inset-bottom)); right: 14px; }
 }
+
+/* Floating phone and SMS actions; keep footer credit unobstructed. */
+.floating-contact-actions{position:fixed;right:22px;bottom:22px;z-index:35;display:flex;gap:10px;align-items:center}
+.floating-contact-actions .btn{box-shadow:0 10px 35px #0002;white-space:nowrap;min-height:48px}
+@media(max-width:700px){.floating-contact-actions{right:14px;bottom:max(14px,env(safe-area-inset-bottom));gap:8px}.floating-contact-actions .btn{padding:12px 15px;font-size:13px}.footer{padding-bottom:110px}}
